@@ -13,6 +13,15 @@ Go wrapper for [MuPDF](http://mupdf.com/) fitz library that can extract pages fr
 * `musl` - use musl compiled library
 * `nocgo` - experimental [purego](https://github.com/ebitengine/purego) implementation (can also be used with `CGO_ENABLED=0`)
 
+### Custom MuPDF vendoring
+
+This fork vendors a custom MuPDF build (headers + Linux amd64 static libs).
+If you update the MuPDF source, re-sync the vendored files with:
+
+```bash
+scripts/vendor_mupdf.sh --mupdf-root /path/to/mupdf
+```
+
 ### Notes
 
 The bundled libraries are built without CJK fonts, if you need them you must use the external library.

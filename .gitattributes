@@ -4,3 +4,4 @@ testdata/test.pbm text eol=lf
 testdata/test.pfm text eol=lf
 testdata/test.pgm text eol=lf
 testdata/test.ppm text eol=lf
+scripts/vendor_mupdf.sh text eol=lf
