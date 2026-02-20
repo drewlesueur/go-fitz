@@ -314,6 +314,7 @@ typedef struct fz_form_field
 	const char *value;
 	const char *font;
 	const char *reset_fields;
+	const char *js_actions;
 	const char **options;
 	const char **values;
 	int option_count;
