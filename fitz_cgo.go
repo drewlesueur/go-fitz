@@ -4,6 +4,7 @@ package fitz
 
 /*
 #include <mupdf/fitz.h>
+#include <mupdf/fitz/output-svg.h>
 #include <stdlib.h>
 
 const char *fz_version = FZ_VERSION;
@@ -61,6 +62,39 @@ int run_page_contents(fz_context *ctx, fz_page *page, fz_device *dev, fz_matrix 
 	}
 
 	return 1;
+}
+
+int run_page_annots(fz_context *ctx, fz_page *page, fz_device *dev, fz_matrix transform, fz_cookie *cookie) {
+	fz_try(ctx) {
+		fz_run_page_annots(ctx, page, dev, transform, cookie);
+	}
+	fz_catch(ctx) {
+		return 0;
+	}
+
+	return 1;
+}
+
+int run_page_widgets(fz_context *ctx, fz_page *page, fz_device *dev, fz_matrix transform, fz_cookie *cookie) {
+	fz_try(ctx) {
+		fz_run_page_widgets(ctx, page, dev, transform, cookie);
+	}
+	fz_catch(ctx) {
+		return 0;
+	}
+
+	return 1;
+}
+
+fz_device *new_svg_device_opts(fz_context *ctx, fz_output *out, float page_width, float page_height,
+	int text_format, int reuse_images, int resolution) {
+	fz_svg_device_options opts;
+	fz_init_svg_device_options(ctx, &opts);
+	opts.text_format = text_format;
+	opts.reuse_images = reuse_images;
+	if (resolution > 0)
+		opts.resolution = resolution;
+	return fz_new_svg_device_with_options(ctx, out, page_width, page_height, &opts);
 }
 */
 import "C"
@@ -382,6 +416,14 @@ func (f *Document) Text(pageNumber int) (string, error) {
 	if ret == 0 {
 		return "", ErrRunPageContents
 	}
+	ret = C.run_page_annots(f.ctx, page, device, ctm, &cookie)
+	if ret == 0 {
+		return "", ErrRunPageContents
+	}
+	ret = C.run_page_widgets(f.ctx, page, device, ctm, &cookie)
+	if ret == 0 {
+		return "", ErrRunPageContents
+	}
 
 	C.fz_close_device(f.ctx, device)
 
@@ -454,8 +496,24 @@ func (f *Document) HTML(pageNumber int, header bool) (string, error) {
 	return str, nil
 }
 
+// SVGOptions controls SVG output behavior.
+type SVGOptions struct {
+	// TextAsText emits text as <text> elements instead of paths.
+	TextAsText bool
+	// ReuseImages shares image resources using <symbol> definitions.
+	ReuseImages bool
+	// Resolution is used when rasterizing shadings to images. Zero uses the MuPDF default.
+	Resolution int
+}
+
 // SVG returns svg document for given page number.
 func (f *Document) SVG(pageNumber int) (string, error) {
+	return f.SVGWithAnnots(pageNumber, nil)
+}
+
+// SVGWithAnnots returns svg document for given page number including annotations/widgets.
+// Options may be nil to use defaults.
+func (f *Document) SVGWithAnnots(pageNumber int, opts *SVGOptions) (string, error) {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 
@@ -483,12 +541,34 @@ func (f *Document) SVG(pageNumber int) (string, error) {
 	out := C.fz_new_output_with_buffer(f.ctx, buf)
 	defer C.fz_drop_output(f.ctx, out)
 
-	device := C.fz_new_svg_device(f.ctx, out, bounds.x1-bounds.x0, bounds.y1-bounds.y0, C.FZ_SVG_TEXT_AS_PATH, 1)
+	textFormat := C.int(C.FZ_SVG_TEXT_AS_TEXT)
+	reuseImages := C.int(1)
+	resolution := C.int(0)
+	if opts != nil {
+		if opts.TextAsText {
+			textFormat = C.int(C.FZ_SVG_TEXT_AS_TEXT)
+		}
+		if !opts.ReuseImages {
+			reuseImages = C.int(0)
+		}
+		if opts.Resolution > 0 {
+			resolution = C.int(opts.Resolution)
+		}
+	}
+	device := C.new_svg_device_opts(f.ctx, out, bounds.x1-bounds.x0, bounds.y1-bounds.y0, textFormat, reuseImages, resolution)
 	C.fz_enable_device_hints(f.ctx, device, C.FZ_NO_CACHE)
 	defer C.fz_drop_device(f.ctx, device)
 
 	var cookie C.fz_cookie
 	ret := C.run_page_contents(f.ctx, page, device, ctm, &cookie)
+	if ret == 0 {
+		return "", ErrRunPageContents
+	}
+	ret = C.run_page_annots(f.ctx, page, device, ctm, &cookie)
+	if ret == 0 {
+		return "", ErrRunPageContents
+	}
+	ret = C.run_page_widgets(f.ctx, page, device, ctm, &cookie)
 	if ret == 0 {
 		return "", ErrRunPageContents
 	}
@@ -543,7 +623,7 @@ func (f *Document) Metadata() map[string]string {
 		defer C.free(unsafe.Pointer(ckey))
 
 		buf := make([]byte, 256)
-		C.fz_lookup_metadata(f.ctx, f.doc, ckey, (*C.char)(unsafe.Pointer(&buf[0])), C.int(len(buf)))
+		C.fz_lookup_metadata(f.ctx, f.doc, ckey, (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
 
 		return string(buf)
 	}

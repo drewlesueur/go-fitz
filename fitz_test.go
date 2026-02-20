@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gen2brain/go-fitz"
@@ -239,6 +240,28 @@ func TestSVG(t *testing.T) {
 		}
 
 		f.Close()
+	}
+}
+
+func TestSVGFieldNames(t *testing.T) {
+	pdfPath := os.Getenv("FZ_FIELD_PDF")
+	if pdfPath == "" {
+		t.Skip("set FZ_FIELD_PDF to a fillable PDF to validate data-field-name output")
+	}
+
+	doc, err := fitz.New(pdfPath)
+	if err != nil {
+		t.Fatalf("open %s: %v", pdfPath, err)
+	}
+	defer doc.Close()
+
+	svg, err := doc.SVG(0)
+	if err != nil {
+		t.Fatalf("svg: %v", err)
+	}
+
+	if !strings.Contains(svg, "data-field-name=") {
+		t.Fatalf("expected SVG to include data-field-name attribute")
 	}
 }
 

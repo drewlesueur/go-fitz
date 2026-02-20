@@ -286,6 +286,50 @@ typedef enum
 	FZ_METATEXT_TITLE
 } fz_metatext;
 
+typedef enum
+{
+	FZ_FORM_FIELD_TEXT,
+	FZ_FORM_FIELD_TEXTAREA,
+	FZ_FORM_FIELD_CHECKBOX,
+	FZ_FORM_FIELD_RADIO,
+	FZ_FORM_FIELD_SELECT,
+	FZ_FORM_FIELD_BUTTON
+} fz_form_field_type;
+
+enum
+{
+	FZ_FORM_FIELD_FLAG_READONLY = 1 << 0,
+	FZ_FORM_FIELD_FLAG_REQUIRED = 1 << 1,
+	FZ_FORM_FIELD_FLAG_PASSWORD = 1 << 2,
+	FZ_FORM_FIELD_FLAG_MULTISELECT = 1 << 3,
+	FZ_FORM_FIELD_FLAG_COMB = 1 << 4,
+	FZ_FORM_FIELD_FLAG_DONT_SCROLL = 1 << 5,
+	FZ_FORM_FIELD_FLAG_EDIT = 1 << 6
+};
+
+typedef struct fz_form_field
+{
+	const char *name;
+	const char *label;
+	const char *value;
+	const char *font;
+	const char *reset_fields;
+	const char **options;
+	const char **values;
+	int option_count;
+	int value_count;
+	int type;
+	int flags;
+	int checked;
+	fz_rect rect;
+	fz_matrix ctm;
+	float font_size;
+	int color_n;
+	float color[4];
+	int max_len;
+	int reset_flags;
+} fz_form_field;
+
 struct fz_device
 {
 	int refs;
@@ -323,6 +367,8 @@ struct fz_device
 
 	void (*render_flags)(fz_context *, fz_device *, int set, int clear);
 	void (*set_default_colorspaces)(fz_context *, fz_device *, fz_default_colorspaces *);
+	void (*set_form_field)(fz_context *, fz_device *, const fz_form_field *field);
+	void (*clear_form_field)(fz_context *, fz_device *);
 
 	void (*begin_layer)(fz_context *, fz_device *, const char *layer_name);
 	void (*end_layer)(fz_context *, fz_device *);
@@ -368,6 +414,8 @@ int fz_begin_tile_tid(fz_context *ctx, fz_device *dev, fz_rect area, fz_rect vie
 void fz_end_tile(fz_context *ctx, fz_device *dev);
 void fz_render_flags(fz_context *ctx, fz_device *dev, int set, int clear);
 void fz_set_default_colorspaces(fz_context *ctx, fz_device *dev, fz_default_colorspaces *default_cs);
+void fz_set_form_field(fz_context *ctx, fz_device *dev, const fz_form_field *field);
+void fz_clear_form_field(fz_context *ctx, fz_device *dev);
 void fz_begin_layer(fz_context *ctx, fz_device *dev, const char *layer_name);
 void fz_end_layer(fz_context *ctx, fz_device *dev);
 void fz_begin_structure(fz_context *ctx, fz_device *dev, fz_structure standard, const char *raw, int idx);
