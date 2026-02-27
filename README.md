@@ -48,6 +48,26 @@ scripts/vendor_mupdf.sh --mupdf-root /path/to/mupdf --build release
 Note: `vendor_mupdf.sh` only copies headers/libs from an existing MuPDF build.
 If you need to rebuild MuPDF first, use `vendor_mupdf_local.sh`.
 
+#### Verify vendored libs (hash check)
+
+If go-fitz still appears to use old MuPDF behavior, verify that the vendored
+libs match the MuPDF build output. The hashes must match exactly.
+
+```bash
+sha256sum /path/to/mupdf/build/release/libmupdf.a \\
+          /path/to/go-fitz/libs/libmupdf_$(uname | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').a
+
+sha256sum /path/to/mupdf/build/release/libmupdf-third.a \\
+          /path/to/go-fitz/libs/libmupdfthird_$(uname | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').a
+```
+
+If the hashes do not match, copy the correct libs manually (example for Linux/arm64):
+
+```bash
+cp /path/to/mupdf/build/release/libmupdf.a /path/to/go-fitz/libs/libmupdf_linux_arm64.a
+cp /path/to/mupdf/build/release/libmupdf-third.a /path/to/go-fitz/libs/libmupdfthird_linux_arm64.a
+```
+
 (Optional) Verify go-fitz still builds/tests:
 
 ```bash
@@ -59,6 +79,21 @@ Example (this environment):
 
 ```bash
 /home/ubuntu/go-fitz/scripts/vendor_mupdf_local.sh --mupdf-root /home/ubuntu/mupdf
+```
+
+#### Generate SVG directly with MuPDF (mutool)
+
+After building MuPDF, you can generate SVG directly with `mutool`:
+
+```bash
+/home/ubuntu/mupdf/build/release/mutool draw -D -F svg -o /tmp/delme.svg /path/to/file.pdf
+```
+
+Useful checks (confirm SVG structure):
+
+```bash
+rg "<use data-text=" /tmp/delme.svg | head -n 5
+rg "<text " /tmp/delme.svg | head -n 5
 ```
 
 ### Notes
