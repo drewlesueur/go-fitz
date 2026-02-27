@@ -68,6 +68,20 @@ cp /path/to/mupdf/build/release/libmupdf.a /path/to/go-fitz/libs/libmupdf_linux_
 cp /path/to/mupdf/build/release/libmupdf-third.a /path/to/go-fitz/libs/libmupdfthird_linux_arm64.a
 ```
 
+Common fix (arm64 host):
+
+```bash
+cd /path/to/mupdf
+make clean
+make build=release
+
+sudo cp /path/to/mupdf/build/release/libmupdf.a /path/to/go-fitz/libs/libmupdf_linux_arm64.a
+sudo cp /path/to/mupdf/build/release/libmupdf-third.a /path/to/go-fitz/libs/libmupdfthird_linux_arm64.a
+
+sha256sum /path/to/mupdf/build/release/libmupdf.a /path/to/go-fitz/libs/libmupdf_linux_arm64.a
+sha256sum /path/to/mupdf/build/release/libmupdf-third.a /path/to/go-fitz/libs/libmupdfthird_linux_arm64.a
+```
+
 (Optional) Verify go-fitz still builds/tests:
 
 ```bash
