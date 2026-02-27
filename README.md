@@ -15,36 +15,47 @@ Go wrapper for [MuPDF](http://mupdf.com/) fitz library that can extract pages fr
 
 ### Custom MuPDF vendoring
 
-This fork vendors a custom MuPDF build (headers + Linux amd64 static libs).
+This fork vendors a custom MuPDF build (headers + static libs).
 If you update the MuPDF source, re-sync the vendored files with the steps below.
 
 #### Step-by-step: rebuild MuPDF and copy into go-fitz
 
-1. Build MuPDF (produces `build/release/libmupdf.a` and `libmupdf-third.a`):
+Use the helper script to rebuild MuPDF and copy the correct OS/arch libs:
+
 ```bash
-cd /path/to/mupdf
-make build=release
+cd /path/to/go-fitz
+scripts/vendor_mupdf_local.sh --mupdf-root /path/to/mupdf
 ```
 
-2. Vendor headers + libs into go-fitz:
+What it does:
+* `make clean` and `make build=release` in MuPDF
+* Copies `libmupdf.a` and `libmupdf-third.a` into `libs/` using the current OS/arch
+
+To also run the full vendoring script afterward (headers + all bundled libs):
+
+```bash
+cd /path/to/go-fitz
+scripts/vendor_mupdf_local.sh --mupdf-root /path/to/mupdf --full
+```
+
+You can still call the original script directly if needed:
+
 ```bash
 cd /path/to/go-fitz
 scripts/vendor_mupdf.sh --mupdf-root /path/to/mupdf --build release
 ```
 
-3. (Optional) Verify go-fitz still builds/tests:
+(Optional) Verify go-fitz still builds/tests:
+
 ```bash
 cd /path/to/go-fitz
 CGO_ENABLED=1 go test ./...
 ```
 
 Example (this environment):
-```bash
-/home/chirag/mupdf
-make build=release
 
-/home/chirag/go-fitz
-scripts/vendor_mupdf.sh --mupdf-root /home/chirag/mupdf --build release
+```bash
+/home/ubuntu/go-fitz/scripts/vendor_mupdf_local.sh --mupdf-root /home/ubuntu/mupdf
 ```
 
 ### Notes
