@@ -45,6 +45,9 @@ cd /path/to/go-fitz
 scripts/vendor_mupdf.sh --mupdf-root /path/to/mupdf --build release
 ```
 
+Note: `vendor_mupdf.sh` only copies headers/libs from an existing MuPDF build.
+If you need to rebuild MuPDF first, use `vendor_mupdf_local.sh`.
+
 (Optional) Verify go-fitz still builds/tests:
 
 ```bash
