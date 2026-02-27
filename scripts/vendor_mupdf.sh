@@ -12,8 +12,8 @@ Options:
   --no-libs             Skip copying libs
   -h, --help            Show this help
 
-This script updates the vendored MuPDF headers and Linux amd64 libs
-used by go-fitz. It does not build MuPDF for you.
+This script updates the vendored MuPDF headers and the current OS/arch
+static libs used by go-fitz. It does not build MuPDF for you.
 
 Examples:
   scripts/vendor_mupdf.sh --mupdf-root /home/chirag/mupdf
@@ -71,16 +71,16 @@ if [[ "$copy_headers" == "yes" ]]; then
   cp -a "$mupdf_root/include/mupdf" "$root_dir/include/"
 
   # Restore vendor stubs required by go-fitz
-  cat >"$root_dir/include/mupdf/vendor.go" <<'EOF'
+  cat >"$root_dir/include/mupdf/vendor.go" <<'EOF2'
 //go:build required
 
 package vendor
-EOF
-  cat >"$root_dir/include/mupdf/fitz/vendor.go" <<'EOF'
+EOF2
+  cat >"$root_dir/include/mupdf/fitz/vendor.go" <<'EOF3'
 //go:build required
 
 package vendor
-EOF
+EOF3
 fi
 
 if [[ "$copy_libs" == "yes" ]]; then
@@ -94,8 +94,29 @@ if [[ "$copy_libs" == "yes" ]]; then
     echo "Expected libmupdf.a and libmupdf-third.a" >&2
     exit 1
   fi
-  cp -a "$libdir/libmupdf.a" "$root_dir/libs/libmupdf_linux_amd64.a"
-  cp -a "$libdir/libmupdf-third.a" "$root_dir/libs/libmupdfthird_linux_amd64.a"
+
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  arch_raw="$(uname -m)"
+  case "$arch_raw" in
+    x86_64|amd64) arch="amd64" ;;
+    aarch64|arm64) arch="arm64" ;;
+    *)
+      echo "Unsupported arch: $arch_raw" >&2
+      exit 1
+      ;;
+  esac
+
+  case "$os" in
+    linux|darwin)
+      ;;
+    *)
+      echo "Unsupported OS: $os" >&2
+      exit 1
+      ;;
+  esac
+
+  cp -a "$libdir/libmupdf.a" "$root_dir/libs/libmupdf_${os}_${arch}.a"
+  cp -a "$libdir/libmupdf-third.a" "$root_dir/libs/libmupdfthird_${os}_${arch}.a"
 fi
 
 echo "MuPDF vendoring complete."
