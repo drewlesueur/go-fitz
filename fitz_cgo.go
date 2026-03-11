@@ -100,10 +100,12 @@ fz_device *new_svg_device_opts(fz_context *ctx, fz_output *out, float page_width
 import "C"
 
 import (
+	"html"
 	"image"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sync"
 	"unsafe"
 )
@@ -115,6 +117,19 @@ type Document struct {
 	doc    *C.struct_fz_document
 	mtx    sync.Mutex
 	stream *C.fz_stream
+}
+
+var (
+	htmlBlockCloseRe = regexp.MustCompile(`(?i)</(p|div|tr|li|h[1-6])>`)
+	htmlBreakRe      = regexp.MustCompile(`(?i)<br\s*/?>`)
+	htmlTagRe        = regexp.MustCompile(`(?s)<[^>]+>`)
+)
+
+func htmlToText(htmlContent string) string {
+	htmlContent = htmlBlockCloseRe.ReplaceAllString(htmlContent, "\n")
+	htmlContent = htmlBreakRe.ReplaceAllString(htmlContent, "\n")
+	htmlContent = htmlTagRe.ReplaceAllString(htmlContent, "")
+	return html.UnescapeString(htmlContent)
 }
 
 // New returns new fitz document.
@@ -392,7 +407,6 @@ func (f *Document) Text(pageNumber int) (string, error) {
 	if page == nil {
 		return "", ErrLoadPage
 	}
-
 	defer C.fz_drop_page(f.ctx, page)
 
 	var bounds C.fz_rect
@@ -405,7 +419,7 @@ func (f *Document) Text(pageNumber int) (string, error) {
 	defer C.fz_drop_stext_page(f.ctx, text)
 
 	var opts C.fz_stext_options
-	opts.flags = 0
+	opts.flags = C.FZ_STEXT_PRESERVE_IMAGES
 
 	device := C.fz_new_stext_device(f.ctx, text, &opts)
 	C.fz_enable_device_hints(f.ctx, device, C.FZ_NO_CACHE)
@@ -416,23 +430,20 @@ func (f *Document) Text(pageNumber int) (string, error) {
 	if ret == 0 {
 		return "", ErrRunPageContents
 	}
-	ret = C.run_page_annots(f.ctx, page, device, ctm, &cookie)
-	if ret == 0 {
-		return "", ErrRunPageContents
-	}
-	ret = C.run_page_widgets(f.ctx, page, device, ctm, &cookie)
-	if ret == 0 {
-		return "", ErrRunPageContents
-	}
 
 	C.fz_close_device(f.ctx, device)
 
-	buf := C.fz_new_buffer_from_stext_page(f.ctx, text)
+	buf := C.fz_new_buffer(f.ctx, 1024)
 	defer C.fz_drop_buffer(f.ctx, buf)
 
-	str := C.GoString(C.fz_string_from_buffer(f.ctx, buf))
+	out := C.fz_new_output_with_buffer(f.ctx, buf)
+	defer C.fz_drop_output(f.ctx, out)
 
-	return str, nil
+	C.fz_print_stext_page_as_html(f.ctx, out, text, C.int(pageNumber))
+	C.fz_close_output(f.ctx, out)
+
+	htmlContent := C.GoString(C.fz_string_from_buffer(f.ctx, buf))
+	return htmlToText(htmlContent), nil
 }
 
 // HTML returns html for given page number.

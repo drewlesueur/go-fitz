@@ -68,6 +68,32 @@ cp /path/to/mupdf/build/release/libmupdf.a /path/to/go-fitz/libs/libmupdf_linux_
 cp /path/to/mupdf/build/release/libmupdf-third.a /path/to/go-fitz/libs/libmupdfthird_linux_arm64.a
 ```
 
+#### Verified recovery sequence (steps 1, 3, 4, 5)
+
+Use this exact sequence when go-fitz SVG output still looks stale:
+
+```bash
+# 1) Rebuild MuPDF
+cd /path/to/mupdf
+scripts/compile.sh --clean -b release -t default
+
+# 3) Copy MuPDF libs into go-fitz for current GOARCH
+ARCH=$(go env GOARCH)
+cp /path/to/mupdf/build/release/libmupdf.a /path/to/go-fitz/libs/libmupdf_linux_${ARCH}.a
+cp /path/to/mupdf/build/release/libmupdf-third.a /path/to/go-fitz/libs/libmupdfthird_linux_${ARCH}.a
+
+# 4) Verify copied libs are the new ones
+strings /path/to/go-fitz/libs/libmupdf_linux_${ARCH}.a | grep -m1 "data-field-key"
+sha256sum /path/to/mupdf/build/release/libmupdf.a /path/to/go-fitz/libs/libmupdf_linux_${ARCH}.a
+sha256sum /path/to/mupdf/build/release/libmupdf-third.a /path/to/go-fitz/libs/libmupdfthird_linux_${ARCH}.a
+
+# 5) Rebuild app (and restart your service/process)
+cd /path/to/your/app
+go clean -cache
+go build ./...
+```
+
+
 Common fix (arm64 host):
 
 ```bash
