@@ -533,46 +533,9 @@ type SVGOptions struct {
 	Resolution int
 }
 
-// SVG returns svg document for given page number without annotation/widget overlays.
+// SVG returns svg document for given page number.
 func (f *Document) SVG(pageNumber int) (string, error) {
-	f.mtx.Lock()
-	defer f.mtx.Unlock()
-
-	if pageNumber >= f.NumPage() {
-		return "", ErrPageMissing
-	}
-
-	page := C.load_page(f.ctx, f.doc, C.int(pageNumber))
-	if page == nil {
-		return "", ErrLoadPage
-	}
-	defer C.fz_drop_page(f.ctx, page)
-
-	bounds := C.fz_bound_page(f.ctx, page)
-	ctm := C.fz_scale(C.float(72.0/72), C.float(72.0/72))
-	bounds = C.fz_transform_rect(bounds, ctm)
-
-	buf := C.fz_new_buffer(f.ctx, 1024)
-	defer C.fz_drop_buffer(f.ctx, buf)
-	out := C.fz_new_output_with_buffer(f.ctx, buf)
-	defer C.fz_drop_output(f.ctx, out)
-
-	textFormat := C.int(C.FZ_SVG_TEXT_AS_PATH)
-	reuseImages := C.int(1)
-	device := C.fz_new_svg_device(f.ctx, out, bounds.x1-bounds.x0, bounds.y1-bounds.y0, textFormat, reuseImages)
-	defer C.fz_drop_device(f.ctx, device)
-
-	var cookie C.fz_cookie
-	ret := C.run_page_contents(f.ctx, page, device, ctm, &cookie)
-	if ret == 0 {
-		return "", ErrRunPageContents
-	}
-
-	C.fz_close_device(f.ctx, device)
-	C.fz_close_output(f.ctx, out)
-
-	str := C.GoString(C.fz_string_from_buffer(f.ctx, buf))
-	return str, nil
+	return f.SVGWithAnnots(pageNumber, nil)
 }
 
 // SVGWithAnnots returns svg document for given page number including annotations/widgets.
@@ -605,7 +568,7 @@ func (f *Document) SVGWithAnnots(pageNumber int, opts *SVGOptions) (string, erro
 	out := C.fz_new_output_with_buffer(f.ctx, buf)
 	defer C.fz_drop_output(f.ctx, out)
 
-	textFormat := C.int(C.FZ_SVG_TEXT_AS_PATH)
+	textFormat := C.int(C.FZ_SVG_TEXT_AS_TEXT)
 	reuseImages := C.int(1)
 	resolution := C.int(0)
 	if opts != nil {
@@ -619,12 +582,7 @@ func (f *Document) SVGWithAnnots(pageNumber int, opts *SVGOptions) (string, erro
 			resolution = C.int(opts.Resolution)
 		}
 	}
-	var device *C.fz_device
-	if opts == nil || resolution == 0 {
-		device = C.fz_new_svg_device(f.ctx, out, bounds.x1-bounds.x0, bounds.y1-bounds.y0, textFormat, reuseImages)
-	} else {
-		device = C.new_svg_device_opts(f.ctx, out, bounds.x1-bounds.x0, bounds.y1-bounds.y0, textFormat, reuseImages, resolution)
-	}
+	device := C.new_svg_device_opts(f.ctx, out, bounds.x1-bounds.x0, bounds.y1-bounds.y0, textFormat, reuseImages, resolution)
 	C.fz_enable_device_hints(f.ctx, device, C.FZ_NO_CACHE)
 	defer C.fz_drop_device(f.ctx, device)
 
