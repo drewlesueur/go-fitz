@@ -1,4 +1,4 @@
-// Copyright (C) 2004-2025 Artifex Software, Inc.
+// Copyright (C) 2004-2024 Artifex Software, Inc.
 //
 // This file is part of MuPDF.
 //
@@ -30,7 +30,6 @@
 #include "mupdf/fitz/shade.h"
 #include "mupdf/fitz/path.h"
 #include "mupdf/fitz/text.h"
-#include "mupdf/fitz/options.h"
 
 /**
 	The different format handlers (pdf, xps etc) interpret pages to
@@ -59,9 +58,12 @@ enum
 	FZ_DEVFLAG_LINEJOIN_UNDEFINED = 256,
 	FZ_DEVFLAG_MITERLIMIT_UNDEFINED = 512,
 	FZ_DEVFLAG_LINEWIDTH_UNDEFINED = 1024,
+	/* Arguably we should have a bit for the dash pattern itself
+	 * being undefined, but that causes problems; do we assume that
+	 * it should always be set to non-dashing at the start of every
+	 * glyph? */
 	FZ_DEVFLAG_BBOX_DEFINED = 2048,
 	FZ_DEVFLAG_GRIDFIT_AS_TILED = 4096,
-	FZ_DEVFLAG_DASH_PATTERN_UNDEFINED = 8192,
 };
 
 enum
@@ -312,6 +314,7 @@ typedef struct fz_form_field
 	const char *name;
 	const char *label;
 	const char *value;
+	const char *export_value;
 	const char *font;
 	const char *reset_fields;
 	const char *js_actions;
@@ -363,7 +366,7 @@ struct fz_device
 	void (*begin_group)(fz_context *, fz_device *, fz_rect area, fz_colorspace *cs, int isolated, int knockout, int blendmode, float alpha);
 	void (*end_group)(fz_context *, fz_device *);
 
-	int (*begin_tile)(fz_context *, fz_device *, fz_rect area, fz_rect view, float xstep, float ystep, fz_matrix ctm, int id, int doc_id);
+	int (*begin_tile)(fz_context *, fz_device *, fz_rect area, fz_rect view, float xstep, float ystep, fz_matrix ctm, int id);
 	void (*end_tile)(fz_context *, fz_device *);
 
 	void (*render_flags)(fz_context *, fz_device *, int set, int clear);
@@ -411,7 +414,6 @@ void fz_begin_group(fz_context *ctx, fz_device *dev, fz_rect area, fz_colorspace
 void fz_end_group(fz_context *ctx, fz_device *dev);
 void fz_begin_tile(fz_context *ctx, fz_device *dev, fz_rect area, fz_rect view, float xstep, float ystep, fz_matrix ctm);
 int fz_begin_tile_id(fz_context *ctx, fz_device *dev, fz_rect area, fz_rect view, float xstep, float ystep, fz_matrix ctm, int id);
-int fz_begin_tile_tid(fz_context *ctx, fz_device *dev, fz_rect area, fz_rect view, float xstep, float ystep, fz_matrix ctm, int id, int doc_id);
 void fz_end_tile(fz_context *ctx, fz_device *dev);
 void fz_render_flags(fz_context *ctx, fz_device *dev, int set, int clear);
 void fz_set_default_colorspaces(fz_context *ctx, fz_device *dev, fz_default_colorspaces *default_cs);
@@ -683,23 +685,9 @@ typedef struct
 FZ_DATA extern const char *fz_draw_options_usage;
 
 /**
-	Initialise a draw_options struct to sensible values.
-*/
-void fz_init_draw_options(fz_context *ctx, fz_draw_options *draw_options);
-
-/**
 	Parse draw device options from a comma separated key-value string.
-
-	This initialises the draw_options struct first.
 */
-fz_draw_options *fz_parse_draw_options(fz_context *ctx, fz_draw_options *draw_options, const char *string);
-
-/**
-	Parse draw device options from an fz_options structure.
-
-	This assumes that the draw_options struct has been initialised already.
-*/
-void fz_apply_draw_options(fz_context *ctx, fz_draw_options *draw_options, fz_options *options);
+fz_draw_options *fz_parse_draw_options(fz_context *ctx, fz_draw_options *options, const char *string);
 
 /**
 	Create a new pixmap and draw device, using the specified options.

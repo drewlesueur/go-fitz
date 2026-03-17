@@ -88,13 +88,8 @@ int run_page_widgets(fz_context *ctx, fz_page *page, fz_device *dev, fz_matrix t
 
 fz_device *new_svg_device_opts(fz_context *ctx, fz_output *out, float page_width, float page_height,
 	int text_format, int reuse_images, int resolution) {
-	fz_svg_device_options opts;
-	fz_init_svg_device_options(ctx, &opts);
-	opts.text_format = text_format;
-	opts.reuse_images = reuse_images;
-	if (resolution > 0)
-		opts.resolution = resolution;
-	return fz_new_svg_device_with_options(ctx, out, page_width, page_height, &opts);
+	(void)resolution;
+	return fz_new_svg_device(ctx, out, page_width, page_height, text_format, reuse_images);
 }
 */
 import "C"
@@ -650,7 +645,7 @@ func (f *Document) Metadata() map[string]string {
 		defer C.free(unsafe.Pointer(ckey))
 
 		buf := make([]byte, 256)
-		C.fz_lookup_metadata(f.ctx, f.doc, ckey, (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
+		C.fz_lookup_metadata(f.ctx, f.doc, ckey, (*C.char)(unsafe.Pointer(&buf[0])), C.int(len(buf)))
 
 		return string(buf)
 	}
