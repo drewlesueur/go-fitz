@@ -9,18 +9,21 @@ import (
 
 // Errors.
 var (
-	ErrNoSuchFile      = errors.New("fitz: no such file")
-	ErrCreateContext   = errors.New("fitz: cannot create context")
-	ErrOpenDocument    = errors.New("fitz: cannot open document")
-	ErrEmptyBytes      = errors.New("fitz: cannot send empty bytes")
-	ErrOpenMemory      = errors.New("fitz: cannot open memory")
-	ErrLoadPage        = errors.New("fitz: cannot load page")
-	ErrRunPageContents = errors.New("fitz: cannot run page contents")
-	ErrPageMissing     = errors.New("fitz: page missing")
-	ErrCreatePixmap    = errors.New("fitz: cannot create pixmap")
-	ErrPixmapSamples   = errors.New("fitz: cannot get pixmap samples")
-	ErrNeedsPassword   = errors.New("fitz: document needs password")
-	ErrLoadOutline     = errors.New("fitz: cannot load outline")
+	ErrNoSuchFile        = errors.New("fitz: no such file")
+	ErrCreateContext     = errors.New("fitz: cannot create context")
+	ErrOpenDocument      = errors.New("fitz: cannot open document")
+	ErrCloneContext      = errors.New("fitz: cannot clone context")
+	ErrEmptyBytes        = errors.New("fitz: cannot send empty bytes")
+	ErrOpenMemory        = errors.New("fitz: cannot open memory")
+	ErrLoadPage          = errors.New("fitz: cannot load page")
+	ErrCreateDisplayList = errors.New("fitz: cannot create display list")
+	ErrRunPageContents   = errors.New("fitz: cannot run page contents")
+	ErrRunDisplayList    = errors.New("fitz: cannot run display list")
+	ErrPageMissing       = errors.New("fitz: page missing")
+	ErrCreatePixmap      = errors.New("fitz: cannot create pixmap")
+	ErrPixmapSamples     = errors.New("fitz: cannot get pixmap samples")
+	ErrNeedsPassword     = errors.New("fitz: document needs password")
+	ErrLoadOutline       = errors.New("fitz: cannot load outline")
 )
 
 // MaxStore is maximum size in bytes of the resource store, before it will start evicting cached resources such as fonts and images.

@@ -140,7 +140,10 @@ rg "<text " /tmp/delme.svg | head -n 5
 
 The bundled libraries are built without CJK fonts, if you need them you must use the external library.
 
-Calling e.g. Image() or Text() methods concurrently for the same document is not supported.
+For cgo builds, `Text()`, `HTML()`, and `SVG()` now snapshot a display list under the
+document lock and can run concurrently for the same document.
+
+Other same-document operations are still serialized by the wrapper.
 
 Purego implementation requires `libffi` and `libmupdf` shared libraries on runtime.
 You must set `fitz.FzVersion` in your code or set `FZ_VERSION` environment variable to exact version of the shared library. 

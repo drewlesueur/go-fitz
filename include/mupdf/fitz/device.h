@@ -312,6 +312,7 @@ typedef struct fz_form_field
 	const char *name;
 	const char *label;
 	const char *value;
+	const char *export_value;
 	const char *font;
 	const char *reset_fields;
 	const char *js_actions;
