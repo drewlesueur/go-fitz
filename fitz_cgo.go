@@ -568,7 +568,7 @@ func (f *Document) SVGWithAnnots(pageNumber int, opts *SVGOptions) (string, erro
 	out := C.fz_new_output_with_buffer(f.ctx, buf)
 	defer C.fz_drop_output(f.ctx, out)
 
-	textFormat := C.int(C.FZ_SVG_TEXT_AS_TEXT)
+	textFormat := C.int(C.FZ_SVG_TEXT_AS_PATH)
 	reuseImages := C.int(1)
 	resolution := C.int(0)
 	if opts != nil {
